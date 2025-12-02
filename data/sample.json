@@ -1,0 +1,14 @@
+[
+  {
+    "question": "Why is TNG eWallet asking me to verify my card?",
+    "answer": "We need to confirm that the card you use to reload your eWallet belongs to you. Visa and Mastercard now require all merchants that accept their debit and credit cards to include additional cardholder details when processing reloads or top-ups. If the card does not belong to you, please select 'It’s someone else’s card' on the pop-up and provide the requested information.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/51913921983769-Why-is-TNG-eWallet-asking-me-to-verify-my-card",
+    "category": "Reload Card Verification"
+  },
+  {
+    "question": "Why must I verify my saved cards on TNG eWallet?",
+    "answer": "Visa and Mastercard require us to confirm card ownership and provide additional details about the cardholder when you reload your TNG eWallet. Verifying your saved card helps us meet this requirement and ensures your transactions remain secure.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/51913891795097-Why-must-I-verify-my-saved-cards-on-TNG-eWallet",
+    "category": "Reload Card Verification"
+  }
+]
