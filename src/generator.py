@@ -165,9 +165,9 @@ class TransformerGenerator:
             else:
                 candidate = ""  # force fallback
 
-        # 8) Short/no valid output -> canonical fallback message
+        # 8) Short/no valid output - canonical fallback message
         if not candidate or len(candidate.split()) < 4:
-            fallback = f"This topic is not in our curated TNG eWallet knowledge base. Please check: {TNGD_FAQ_URL}"
+            fallback = f"This topic is not in our curated TNG eWallet knowledge base or request blocked. Please check: {TNGD_FAQ_URL}"
             if return_metadata:
                 return {
                     "answer": fallback,
@@ -175,8 +175,10 @@ class TransformerGenerator:
                     "retry_raw": self.last_model_raw_retry,
                     "prompt_length": self.last_prompt_length,
                     "prompt_full": prompt,
+                    "is_fallback": True,
                 }
-            return fallback
+            return {"answer": fallback, "is_fallback": True}
+
 
         # 9) Post-process: remove trailing "Sources:" footer if present
         answer_part = candidate
