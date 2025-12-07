@@ -24,29 +24,26 @@ class Reranker:
         return (arr - mn) / (mx - mn)
     
     def rank(self, query: str, candidates: List[Dict[str, Any]], alpha: float = 0.8) -> List[Dict[str, Any]]:
-        """
-        Rank candidates using CrossEncoder and fuse with retriever scores.
-        Returns candidates with added fields: rerank_score, retriever_score_norm, fused_score.
-        Minimal fallback: if cross.predict fails at runtime, use retriever scores as rerank_scores.
-        """
+        # 1) Extract candidate texts and count items
         texts = [c.get("chunk_text", "") for c in candidates]
         n = len(texts)
         if n == 0:
             return []
 
-        # Compute cross-encoder scores (batched)
+        # 2) Prepare (query, text) pairs for the CrossEncoder
         pairs = [[query, t] for t in texts]
         all_scores = []
 
+        # 3) Score pairs with the CrossEncoder in batches
         for batch in self._batched(pairs, self.batch_size):
             batch_scores = self.cross.predict(batch, show_progress_bar=False)
             all_scores.extend(batch_scores)
         rerank_scores = np.array(all_scores, dtype=float)
 
-        # Retriever raw scores
+        # 4) Retriever raw scores
         retr_scores = np.array([float(c.get("score", 0.0)) for c in candidates], dtype=float)
 
-        # Normalization
+        # 5) Normalization
         if n == 1:
             r_norm = np.array([1.0], dtype=float)
             retr_norm = np.array([1.0], dtype=float)
@@ -54,20 +51,20 @@ class Reranker:
             r_norm = self._minmax_norm(rerank_scores)
             retr_norm = self._minmax_norm(retr_scores)
 
-        # Clamp alpha
+        # 6) Validate and clamp fusion weight `alpha`
         try:
             a = float(alpha)
         except Exception:
             a = 0.8
         a = max(0.0, min(1.0, a))
 
-        # Score-based linear fusion
+        # 7) Fuse normalized score (score-based linear fusion)
         if r_norm.size == 0 or retr_norm.size == 0:
             fused = np.array([], dtype=float)
         else:
             fused = a * r_norm + (1.0 - a) * retr_norm
 
-        # Build output
+        # 8) Build output
         out = []
         for i, c in enumerate(candidates):
             new = dict(c)
