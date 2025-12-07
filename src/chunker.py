@@ -78,7 +78,7 @@ def faq_to_chunks(
                 out.append((merged_text, meta))
                 break
 
-            # normal chunk creation
+            # Normal chunk creation
             chunk_ids = token_ids[i:j]
             chunk_text = tokenizer.decode(
                 chunk_ids,
