@@ -1,11 +1,8 @@
-# run ask_tngd_bot() and print JSON output for debugging
-
 import sys
 import json
 from pathlib import Path
 import traceback
 
-# Ensure repo root is on sys.path
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
