@@ -2,7 +2,6 @@ from typing import List, Dict, Union
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import torch
 from src.prompt import TNG_PROMPT
-from src.guardrails import enforce_grounding
 
 TNGD_FAQ_URL = "https://support.tngdigital.com.my/hc/en-my/categories/360002280493-Frequently-Asked-Questions-FAQ"
 
@@ -25,7 +24,7 @@ class TransformerGenerator:
         self._model.eval()
         self.max_input_len = int(min(getattr(self._tok, "model_max_length", 1024), 1024))
 
-        # diagnostics
+        # Diagnostics
         self.last_prompt_length = None
         self.last_model_raw_initial = None
         self.last_model_raw_retry = None
@@ -62,10 +61,10 @@ class TransformerGenerator:
             "prompt_full": <prompt text>
           }
         """
-        # build prompt (we keep it here so generator can report it in metadata)
+        # 1) Build prompt from retrieved chunks
         prompt = self._build_prompt(question, retrieved, top_k=top_k_chunks)
 
-        # prompt token diagnostics
+        # 2) Token-count diagnostics
         try:
             prompt_token_count = len(self._tok.encode(prompt, truncation=False))
         except Exception:
@@ -73,11 +72,11 @@ class TransformerGenerator:
             prompt_token_count = int(tmp["input_ids"].shape[1])
         self.last_prompt_length = int(prompt_token_count)
 
-        # encode (truncated) for model
+        # 3) Encode/tokenize (with truncation) and prepare generation kwargs
         encoded = self._tok(prompt, return_tensors="pt", truncation=True, max_length=self.max_input_len, padding="longest").to(self.device)
         gen_kwargs = {"input_ids": encoded["input_ids"], "attention_mask": encoded["attention_mask"], "max_new_tokens": max_tokens}
 
-        # decoding strategy
+        # 4) Decode (beam for deterministic, sampling if temp>0)
         try:
             temp_val = float(temperature)
         except Exception:
@@ -87,6 +86,7 @@ class TransformerGenerator:
         else:
             gen_kwargs.update(do_sample=True, temperature=temp_val, top_p=0.95, top_k=50, no_repeat_ngram_size=3)
 
+        # helper: single model generate + decode
         def _gen_once(kwargs):
             try:
                 with torch.no_grad():
@@ -98,31 +98,27 @@ class TransformerGenerator:
             except Exception:
                 return ""
 
-        # initial generation
+        # 5) Initial generation
         initial = _gen_once(gen_kwargs)
         self.last_model_raw_initial = initial
 
-        # quick echo test
+        # 6) Echo detection
         def _looks_like_echo(output: str, prompt_text: str) -> bool:
-            # existing sanity checks
+            # 6a) Sanity checks
             if not output:
                 return True
             o = " ".join(output.split()).lower()
             p = " ".join(prompt_text.split()).lower()
 
-            # very short/single token responses are suspicious
+            # 6b) too short or exact copy checks
             if len(o.split()) == 1:
                 return True
-
-            # exact substring copy of prompt (fast path)
             if o in p:
                 return True
-
-            # prompt contains the output (other direction)
             if p in o:
                 return True
 
-            # explicit rule: if output contains obvious instruction lines, treat as echo
+            # 6c) Explicit rule - if output contains obvious instruction lines, treat as echo
             instr_markers = [
                 "you are the official tng ewallet faq assistant",
                 "use only the provided sources",
@@ -134,20 +130,20 @@ class TransformerGenerator:
                 if m in o:
                     return True
 
-            # token overlap heuristic (more robust)
+            # 6d) Token overlap heuristic (more robust)
             try:
                 import re
                 o_tokens = {t for t in re.findall(r"\w+", o) if len(t) > 2}
                 p_tokens = {t for t in re.findall(r"\w+", p) if len(t) > 2}
                 if len(o_tokens) > 0 and len(p_tokens) > 0:
                     overlap = len(o_tokens & p_tokens) / max(1, len(o_tokens))
-                    # if more than half of output tokens appear in the prompt, consider echo
+                    # If more than half of output tokens appear in the prompt, consider echo
                     if overlap >= 0.5:
                         return True
             except Exception:
                 pass
 
-            # some canned rejection phrases from model should also be considered echo
+            # Some canned rejection phrases from model should also be considered echo
             if "if the question" in o or "request blocked" in o or "this topic is not in our curated" in o:
                 return True
 
@@ -155,8 +151,9 @@ class TransformerGenerator:
 
 
         candidate = initial
+
+        # 7) If initial looks like an echo, retry with sampled decoding at higher temps
         if _looks_like_echo(candidate, prompt):
-            # sampled retries with increasing temp
             for temp, extra in ((0.6, 80), (0.8, 120), (1.0, 160)):
                 retry_kwargs = gen_kwargs.copy()
                 retry_kwargs.update({"do_sample": True, "temperature": temp, "max_new_tokens": max_tokens + extra})
@@ -168,7 +165,7 @@ class TransformerGenerator:
             else:
                 candidate = ""  # force fallback
 
-        # short / no valid candidate -> fallback
+        # 8) Short/no valid output -> canonical fallback message
         if not candidate or len(candidate.split()) < 4:
             fallback = f"This topic is not in our curated TNG eWallet knowledge base. Please check: {TNGD_FAQ_URL}"
             if return_metadata:
@@ -181,14 +178,13 @@ class TransformerGenerator:
                 }
             return fallback
 
-        # strip Sources: footer (we still return full candidate in metadata)
+        # 9) Post-process: remove trailing "Sources:" footer if present
         answer_part = candidate
         if "Sources:" in candidate:
             idx = candidate.rfind("Sources:")
             answer_part = candidate[:idx].strip()
 
-        # Note: generator no longer enforces grounding here. rag_bot.py is authoritative.
-
+        # 10) Return metadata if requested, otherwise return candidate string
         if return_metadata:
             return {
                 "answer": candidate,
