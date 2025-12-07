@@ -1,17 +1,7 @@
 from typing import List, Dict, Any
 import re
 
-# Guardrails Categories:
-#  - Security & Privacy
-#  - Prompt Injection Shield
-#  - Inappropriate Content Filter
-#  - Offensive Language Filter
-#  - Sensitive Content Scanner
-#  - Response & Relevance Guardrails
-#  - Content Validation & Integrity
-#  - Logic & Functionality Validation
-
-# 1) SECURITY & PRIVACY 
+# 1) BLOCK LISTS / REGEX DETECTORS
 BLOCKED_KEYWORDS = [
     "hack", "bypass", "exploit", "phish", "steal", "credit card", "cvv", "ssn",
     "illegal", "bomb", "terror", "attack", "malware", "virus", "ransomware", "drug",
@@ -19,7 +9,6 @@ BLOCKED_KEYWORDS = [
     "doxx", "dox", "card number"
 ]
 
-# 2) PROMPT INJECTION SHIELD
 INJECTION_PHRASES = [
     "ignore previous", "ignore all previous", "forget previous", "forget all previous",
     "pretend you are", "you are now", "do not follow", "don't follow", "disallowed",
@@ -27,7 +16,6 @@ INJECTION_PHRASES = [
     "system prompt", "assistant should", "ignore instructions", "break character"
 ]
 
-# Patterns for private/credential requests (explicit phrases)
 PRIVATE_PATTERNS = [
     r"\bpersonal data\b", r"\bprivate data\b", r"\bpersonal information\b",
     r"do you have .*personal", r"share.*personal", r"what is .*ssn",
@@ -36,8 +24,6 @@ PRIVATE_PATTERNS = [
     r"\bpassport\b", r"\bpassport number\b", r"give me .*passport", r"show .*passport"
 ]
 
-
-# Product-scoped PII helpers (see is_blocked logic)
 PII_IDENTITY_PHRASES = [
     r"\b(name of|what is the name of|identify (?:the )?|reveal .*name|who\s+is\s+|who\s+are\s+)\b",
     r"\b(transaction history|transaction(s)? history|show .*transactions|provide .*transactions)\b",
@@ -45,7 +31,6 @@ PII_IDENTITY_PHRASES = [
     r"\b(customer data|customer details|user data|user details|user profile|personal profile)\b",
 ]
 
-# product / domain tokens that indicate the intent refers to product users/accounts
 PRODUCT_TOKENS = [
     r"\btng\b",
     r"touch\s*'?n\s*go",
@@ -56,13 +41,11 @@ PRODUCT_TOKENS = [
     r"\baccount(s)?\b"
 ]
 
-# 3) SENSITIVE CONTENT SCANNER (flagging, not blocking by default)
 SENSITIVE_TOPICS = [
     "religion", "race", "ethnicity", "politics", "election", "terrorism", "gun control",
     "abortion", "genocide", "holocaust"
 ]
 
-# 4) INAPPROPRIATE CONTENT & OFFENSIVE LANGUAGE
 PROFANITY = [
     "fuck", "shit", "bastard", "bitch", "asshole", "damn"
 ]
@@ -84,7 +67,7 @@ _KEYWORD_RE = re.compile(
     flags=re.IGNORECASE,
 )
 
-# 5) NORMALISATION FOR OBFSUCATION DETECTION 
+# 2) OBFUSCATION NORMALIZATION
 _LEET_MAP = str.maketrans({"0": "o", "1": "l", "3": "e", "4": "a", "5": "s", "7": "t", "@": "a", "$": "s"})
 
 def _normalize_text(s: str) -> str:
@@ -105,10 +88,9 @@ def _leet_normalize(s: str) -> str:
     return s.translate(_LEET_MAP)
 
 def _normalize_for_obfuscation(s: str) -> str:
-    """Single helper that collapses non-alnum and leet-normalizes for obfuscation detection."""
     return _leet_normalize(_collapse_alnum(s))
 
-# 6) RESPONSE & RELEVANCE / CONTENT VALIDATION (Tokenization and n-gram helpers)
+# 3) TOKENIZATION & N-GRAM HELPERS (used by grounding)
 def _tokenize(text: str) -> List[str]:
     if not isinstance(text, str):
         return []
@@ -124,8 +106,7 @@ def _get_ngrams(tokens: List[str], n: int) -> List[str]:
         return []
     return [" ".join(tokens[i:i+n]) for i in range(0, len(tokens)-n+1)]
 
-
-# 6) BLOCKING LOGIC (pre-response gate)
+# 4) BLOCKING DECISION LOGIC (is_blocked)
 def is_blocked(question: str) -> Dict[str, Any]:
     """
     Returns {"blocked": bool, "reason": str, "risk_score": float}.
@@ -142,7 +123,7 @@ def is_blocked(question: str) -> Dict[str, Any]:
     q_raw = question or ""
     q = _normalize_text(q_raw)
 
-    # 1) Absolute sensitive checks (high confidence, block immediately)
+    # 4a) Absolute sensitive checks (high confidence, block immediately)
     if _CC_RE.search(q_raw):
         return {"blocked": True, "reason": "Request contains credit-card-like number", "risk_score": 1.0}
     if _CVV_RE.search(q_raw):
@@ -150,32 +131,32 @@ def is_blocked(question: str) -> Dict[str, Any]:
     if _EMAIL_RE.search(q_raw) and re.search(r"(password|credentials|login)", q):
         return {"blocked": True, "reason": "Request for credentials / login", "risk_score": 0.95}
 
-    # 2) Product-scoped PII intent (requires both an identity phrase and a product token)
+    # 4b) Product-scoped PII intent 
     if _PII_IDENTITY_RE.search(q) and _PRODUCT_TOKENS_RE.search(q):
         return {"blocked": True, "reason": "Request to identify product user / reveal PII or transactions", "risk_score": 0.95}
 
-    # 3) Explicit private/personal phrases (fallback, block)
+    # 4c) Explicit private/personal phrases 
     if _PRIVATE_RE.search(q):
         return {"blocked": True, "reason": "Personal/private data request", "risk_score": 0.95}
 
-    # 4) Prompt injection phrases (attempt to override/steer the assistant)
+    # 4d) Prompt injection phrases 
     if _INJECTION_RE.search(q):
         return {"blocked": True, "reason": "Instruction override phrase", "risk_score": 0.95}
 
-    # 5) Direct word-boundary keyword match (fast, clear)
+    # 4e) Direct word-boundary keyword match 
     m = _KEYWORD_RE.search(q)
     if m:
         return {"blocked": True, "reason": f"Contains blocked keyword '{m.group(0)}'", "risk_score": 1.0}
 
-    # 6) Offensive / profane language
+    # 4f) Offensive / profane language
     if _PROFANITY_RE.search(q):
         return {"blocked": True, "reason": "Offensive language", "risk_score": 1.0}
 
-    # 7) Sensitive-topic flagging (do not block by default; return a caution reason)
+    # 4g) Sensitive-topic flagging 
     if _SENSITIVE_RE.search(q):
         return {"blocked": False, "reason": "Question touches a sensitive topic; proceed with caution", "risk_score": 0.6}
 
-    # 8) Obfuscated attempts — collapse & leet-normalize then check keywords/injection again
+    # 4h) Obfuscated attempts 
     collapsed_leet = _normalize_for_obfuscation(q_raw)
 
     if _BLOCKED_COLLAPSED_RE.search(collapsed_leet):
@@ -183,12 +164,10 @@ def is_blocked(question: str) -> Dict[str, Any]:
     if _INJECTION_COLLAPSED_RE.search(collapsed_leet):
         return {"blocked": True, "reason": "Detected obfuscated instruction phrase", "risk_score": 0.9}
 
-    # default allow
+    # Default allow
     return {"blocked": False, "reason": "", "risk_score": 0.0}
 
-# ---------------------------------------------------------------------
-# 6) Response & relevance / Content validation: grounding check
-# ---------------------------------------------------------------------
+# 5) GROUNDING CHECK
 def enforce_grounding(answer: str, retrieved_texts: List[str]) -> bool:
     """
     Verify that the model's answer (first few sentences) is grounded in retrieved_texts.
@@ -202,7 +181,7 @@ def enforce_grounding(answer: str, retrieved_texts: List[str]) -> bool:
     if not isinstance(answer, str) or not retrieved_texts:
         return False
 
-    # split into sentences (simple heuristic)
+    # Split into sentences (simple heuristic)
     sents = [s.strip() for s in re.split(r'(?<=[.!?])\s+', answer) if s.strip()]
     sents = sents[:3]
 
@@ -221,13 +200,13 @@ def enforce_grounding(answer: str, retrieved_texts: List[str]) -> bool:
         sent_set = set(sent_toks)
         sent_len = len(sent_toks)
 
-        # 1) token overlap ratio
+        # 5a) token overlap ratio
         for rt_set in retrieved_token_sets:
             inter = sent_set.intersection(rt_set)
             if not inter:
                 continue
             overlap_ratio = len(inter) / max(1, sent_len)
-            # require higher threshold for short sentences
+            # Require higher threshold for short sentences
             if sent_len <= 5:
                 if overlap_ratio >= 0.6:
                     return True
@@ -235,7 +214,7 @@ def enforce_grounding(answer: str, retrieved_texts: List[str]) -> bool:
                 if overlap_ratio >= 0.4:
                     return True
 
-        # 2) 3-gram exact match
+        # 5b) 3-gram exact match
         s_ngrams = set(_get_ngrams(sent_toks, 3))
         if s_ngrams:
             for r_ngrams in retrieved_ngrams:
@@ -244,7 +223,7 @@ def enforce_grounding(answer: str, retrieved_texts: List[str]) -> bool:
 
     return False
 
-# 7) Moderation / Post-response scoring
+# 6) MODERATION SCORING
 def moderation_score(text: str) -> float:
     if not isinstance(text, str) or not text.strip():
         return 0.0
@@ -252,7 +231,7 @@ def moderation_score(text: str) -> float:
     t_raw = text
     t = _normalize_text(text)
 
-    # Reuse is_blocked to catch most patterns; convert its reason -> numeric
+    # 6a) Use is_blocked first
     block_info = is_blocked(text)
     if block_info.get("blocked"):
         # Map to high scores
@@ -264,11 +243,11 @@ def moderation_score(text: str) -> float:
         # injection/credentials/product-scoped -> slightly less than 1.0 but high
         return max(0.9, block_info.get("risk_score", 0.9))
 
-    # If not blocked but flagged by sensitive topic:
+    # 6b) If not blocked, then flagged by sensitive topic
     if block_info.get("risk_score") == 0.6:
         return 0.6
 
-    # Additional checks for output-specific sensitive content
+    # 6c) Additional checks
     if _KEYWORD_RE.search(t):
         return 1.0
     if _PROFANITY_RE.search(t):
@@ -278,11 +257,11 @@ def moderation_score(text: str) -> float:
     if _INJECTION_RE.search(t):
         return 0.9
 
-    # If output explicitly asks to reveal secrets or credentials (targeted regex)
+    # 6d) Credential-asking patterns
     if re.search(r"(password|credentials|secret|admin).{0,40}(tell|give|show|reveal|what|is|are)", t):
         return 0.95
 
-    # Obfuscated checks
+    # 6e) Obfuscated checks
     collapsed_leet = _normalize_for_obfuscation(t_raw)
     for k in BLOCKED_KEYWORDS:
         if k and k.replace(" ", "") in collapsed_leet:
@@ -291,6 +270,7 @@ def moderation_score(text: str) -> float:
     # Default safe
     return 0.0
 
+# 7) WRAPPER FUNCTION
 def check_and_classify(question: str) -> Dict[str, Any]:
     blocked_info = is_blocked(question)
     score = moderation_score(question)
