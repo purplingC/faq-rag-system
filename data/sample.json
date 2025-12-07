@@ -1,14 +1,182 @@
 [
   {
+    "question": "Why must I verify my saved cards on TNG eWallet?",
+    "answer": "Visa and Mastercard require us to confirm card ownership and provide additional details about the cardholder when you reload your TNG eWallet. Verifying your saved card helps us meet this requirement and ensures your transactions remain secure.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/51913891795097-Why-must-I-verify-my-saved-cards-on-TNG-eWallet",
+    "category": "Reload Card Verification"
+  },
+    {
     "question": "Why is TNG eWallet asking me to verify my card?",
     "answer": "We need to confirm that the card you use to reload your eWallet belongs to you. Visa and Mastercard now require all merchants that accept their debit and credit cards to include additional cardholder details when processing reloads or top-ups. If the card does not belong to you, please select 'It’s someone else’s card' on the pop-up and provide the requested information.",
     "url": "https://support.tngdigital.com.my/hc/en-my/articles/51913921983769-Why-is-TNG-eWallet-asking-me-to-verify-my-card",
     "category": "Reload Card Verification"
   },
   {
-    "question": "Why must I verify my saved cards on TNG eWallet?",
-    "answer": "Visa and Mastercard require us to confirm card ownership and provide additional details about the cardholder when you reload your TNG eWallet. Verifying your saved card helps us meet this requirement and ensures your transactions remain secure.",
-    "url": "https://support.tngdigital.com.my/hc/en-my/articles/51913891795097-Why-must-I-verify-my-saved-cards-on-TNG-eWallet",
+    "question": "How soon must I verify my saved card(s)?",
+    "answer": "A pop-up on your TNG eWallet home screen will show how many days you have left to verify your saved primary card. Be sure to complete the verification before the countdown ends to avoid any interruptions when reloading using your debit or credit card. Topping up your eWallet via DuitNow Transfer and reload PINs remain unaffected.​",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/51913855530905-How-soon-must-I-verify-my-saved-card-s",
     "category": "Reload Card Verification"
+  },
+  {
+    "question": "What information do I need to provide if “It’s my card” that’s saved on TNG eWallet?",
+    "answer": "If the saved card belongs to you, no further information is required. Just click \"It's my card\" to proceed.​",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/51913858803865-What-information-do-I-need-to-provide-if-It-s-my-card-that-s-saved-on-TNG-eWallet",
+    "category": "Reload Card Verification"
+  },
+  {
+    "question": "What is TNG eWallet SOS Balance?",
+    "answer": "SOS Balance is an exclusive feature designed for our loyal TNG eWallet users, currently available for toll payments only. It ensures you’re never stuck at critical moments due to insufficient eWallet balance, covering essential payments on your behalf. Best of all, there are no additional fees to enjoy this benefit. Simply reload your eWallet within 24 hours and any outstanding SOS Balance will be automatically deducted. More services will be added to SOS Balance soon, making this feature even more rewarding and convenient.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/40801181483289-What-is-TNG-eWallet-SOS-Balance",
+    "category": "SOS Balance"
+  },
+    {
+    "question": "Is there a limit to the number of vehicles per eligible SOS Balance user?",
+    "answer": "No, there is no limit as long as the vehicle's RFID tag and the linked Touch 'n Go cards for PayDirect deduction are registered to the eligible user's TNG eWallet account.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/42589782721561-Is-there-a-limit-to-the-number-of-vehicles-per-eligible-SOS-Balance-user",
+    "category": "SOS Balance"
+  },
+  {
+    "question": "What is Touch ‘n Go Consumer Portal?",
+    "answer": "The Touch ‘n Go Consumer Portal is a shared platform for Touch ‘n Go and TNG eWallet users. It allows you to view, manage, and track your transactions across your eWallet, Touch ‘n Go Cards, and RFID tags in one place.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/51471937190937-What-is-Touch-n-Go-Consumer-Portal",
+    "category": "Consumer Portal"
+  },
+  {
+    "question": "How do I log in to the Touch ‘n Go Consumer Portal?",
+    "answer": "To log in, follow these steps:\n\n- Visit https://consumer.touchngo.com.my and scan the QR code on the homepage using your eWallet\n\n- Enter your 6-digit eWallet PIN.\n\n- Complete the facial recognition verification\n\n- You will be logged in successfully",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/51471911979673-How-do-I-log-in-to-the-Touch-n-Go-Consumer-Portal",
+    "category": "Consumer Portal"
+  },
+  {
+    "question": "What should I do if EV Charging mini program doesn't show nearby charging stations?",
+    "answer": "Ensure your device's location services are enabled and TNG eWallet has permission to access your location. If the issue persists, try refreshing the app.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/51601790191641-What-should-I-do-if-EV-Charging-mini-program-doesn-t-show-nearby-charging-stations",
+    "category": "EV Charging"
+  },
+  {
+    "question": "What can I do if the charging session does not start?",
+    "answer": "If your charging session does not start, please follow these steps to troubleshoot the issue:\n\n- Check the cable. Ensure the charger is securely plugged into both your car and the charging station. Push it in firmly if needed.\n\n- Check your internet connection. Make sure your phone has a stable internet connection.\n\n- Restart the session. Fully close the TNG eWallet app, open it again, refresh the EV Charging mini program, and try to start charging once more.\n\n- Look for error messages. Check the app or charger screen for any alerts or instructions.\n\n- Try another charger. If possible, switch to a different charging point to see if the issue persists.\n\n- Still not working? Contact TNG eWallet via Chat here. Share the charger ID, your vehicle model, and a brief description of the issue.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/51601991509401-What-can-I-do-if-the-charging-session-does-not-start",
+    "category": "EV Charging"
+  },
+  {
+    "question": "Can I still report if the unauthorised transaction happened more than 90 days ago?",
+    "answer": "We understand how stressful it is to discover a suspicious transaction. But to properly investigate, the report must be made within 90 days from when the transaction happened.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/48893081994649-Can-I-still-report-if-the-unauthorised-transaction-happened-more-than-90-days-ago",
+    "category": "Unauthorised Transaction Report"
+  },
+  {
+    "question": "Can I report the same transaction to National Scam Response Centre (NSRC)?",
+    "answer": "Yes, but timing is important. The NSRC is best for immediate help if you’ve just realised you’ve been scammed. You must contact them within 24 hours of the incident as this increases the chances of stopping the money from going further.\n\nYou can call 997 , the NSRC hotline, which is open daily from 8am to 8pm. Be ready with details such as your name, mobile number, date and time of the transaction, and amount involved.\n\nPlease note: If you’ve already submitted a report to NSRC for the same transaction, you don’t need to submit another report to us. One report per case is enough",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/48892880902681-Can-I-report-the-same-transaction-to-National-Scam-Response-Centre-NSRC",
+    "category": "Unauthorised Transaction Report"
+  },
+  {
+    "question": "Which trader types are affected by e-Invoice implementation?",
+    "answer": "All TNGD merchants and partners are affected by e-Invoice implementation.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/43948524013465-Which-trader-types-are-affected-by-e-Invoice-implementation",
+    "category": "e-Invoice"
+  },
+  {
+    "question": "What are the benefits of e-Invoice?",
+    "answer": "The implementation of e-Invoice offers numerous advantages, including:\n\n- Minimises human errors through electronic data handling\n\n- Speeds up invoicing processes\n\n- Reduces operational costs through automation\n\n- Makes financial data easier to manage and access.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/43948417368473-What-are-the-benefits-of-e-Invoice",
+    "category": "e-Invoice"
+  },
+  {
+    "question": "What is CardMatch?",
+    "answer": "CardMatch is a feature on the TNG eWallet app that allows you to browse and apply for credit cards available with Partner Bank.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/51398970213401-What-is-CardMatch",
+    "category": "CardMatch"
+  },
+  {
+    "question": "How do I use CardMatch?",
+    "answer": "You can view and compare various credit card options before applying for one that best suits your needs.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/51398949331609-How-do-I-use-CardMatch",
+    "category": "CardMatch"
+  },
+  {
+    "question": "Can I edit my Near Me review after submitting it?",
+    "answer": "Currently, editing is not supported. We recommend reviewing your feedback carefully before submitting to ensure it’s just right.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/40947645511321-Can-I-edit-my-Near-Me-review-after-submitting-it",
+    "category": "Near Me"
+  },
+  {
+    "question": "What is Near Me on TNG eWallet?",
+    "answer": "Near Me is a new feature that makes it convenient to find restaurants near you through authentic reviews left by other users. It provides details like operating hours, location, contact information, category, distance, and even reviews and comments from other users. You can also discover rewarding deals with participating merchants nearby.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/40947828970265-What-is-Near-Me-on-TNG-eWallet",
+    "category": "Near Me"
+  },
+  {
+    "question": "Am I eligible to invest via e-Mas?",
+    "answer": "If you’re 18 years old or older, a TNG eWallet user, and has completed the e-Know Your Customer (eKYC) account verification process, you’re eligible to invest in e-Mas. Additional conditions may apply, and we will notify you of any updates.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/23398857402649-Am-I-eligible-to-invest-via-e-Mas",
+    "category": "e-Mas"
+  },
+  {
+    "question": "How do I check my current gold investment value if I sell my gold at the market rate?",
+    "answer": "Monitoring gold investment prices is very simple on TNG eWallet. Just follow the 3 easy steps below:\n\nStep 1: On the e-Mas page, tap on “Sell Gold”.\n\nStep 2: Next, tap on “Sell All” then tap on “Calculate”.\n\nStep 3: Now, you can view the current gold value based on latest market rate.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/33652476995097-How-do-I-check-my-current-gold-investment-value-if-I-sell-my-gold-at-the-market-rate",
+    "category": "e-Mas"
+  },
+  {
+    "question": "What is Zakat?",
+    "answer": "Zakat is a mandatory form of almsgiving in Islam, aiming to redistribute wealth and help those in need. It is obligatory for Muslims who meet certain wealth criteria, involving giving certain part of their wealth annually to support the poor and others in need.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/30231193503257-What-is-Zakat",
+    "category": "Zakat"
+  },
+    {
+    "question": "Is Touch n Go Digital the right hand/ legal official zakat collector (amil)?",
+    "answer": "Yes, we are the official Zakat collector (amil) that has been appointed by the zakat bodies itself.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/30231164495129-Is-Touch-n-Go-Digital-the-right-hand-legal-official-zakat-collector-amil",
+    "category": "Zakat"
+  },
+  {
+    "question": "Will I receive a physical road tax?",
+    "answer": "No, you will not receive physical road tax with effective from 1st Oct 2023. You are required to download MyJPJ app to view your digital road tax.\n\nHowever, we are still opening ‘physical road tax’ option for Foreigners in view that Foreigners can’t register an account with MyJPJ.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/34155059178265-Will-I-receive-a-physical-road-tax",
+    "category": "Road Tax"
+  },
+  {
+    "question": "Can I renew multiple road tax application?",
+    "answer": "Yes, you can renew as many road tax applications as you want as long as you have the Owner’s Full Name,Vehicle Plate No.,ID / Passport No. and Vehicle Details.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/14374643747865-Can-I-renew-multiple-road-tax-application",
+    "category": "Road Tax"
+  },
+  {
+    "question": "When does the repayment period begin?",
+    "answer": "The repayment begins 14 days from the date you successfully complete your SOS Top Up transaction.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/21576183749529-When-does-the-repayment-period-begin",
+    "category": "SOS Top Up"
+  },
+  {
+    "question": "What is SOS Top Up About?",
+    "answer": "SOS Top Up is a service which enables you to get prepaid credit in advance and pay for it later.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/21576244550681-What-is-SOS-Top-Up-About",
+    "category": "SOS Top Up"
+  },
+  {
+    "question": "What is the difference between TNG eWallet Soundbox Pocket and TNG eWallet TransferMATE?",
+    "answer": "Both Soundbox models are not the same as one is for TNG eWallet merchants and the other is for TNG eWallet users. Here are the differences:",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/42361637466265-What-is-the-difference-between-TNG-eWallet-Soundbox-Pocket-and-TNG-eWallet-TransferMATE",
+    "category": "Soundbox TransferMate"
+  },
+  {
+    "question": "How long does it take for my TNG eWallet Soundbox TransferMATE order to arrive? Can I track its delivery status?",
+    "answer": "Delivery will be made within 14 working days from the date of purchase.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/38589012119577-How-long-does-it-take-for-my-TNG-eWallet-Soundbox-TransferMATE-order-to-arrive-Can-I-track-its-delivery-status",
+    "category": "Soundbox TransferMate"
+  },
+  {
+    "question": "How to know which items can pay with TnGD Points?",
+    "answer": "Those items which are labelled with the point amount can be paid with TnGD Points.\n\nThank you for supporting A+ Rewards!",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/33361699069849-How-to-know-which-items-can-pay-with-TnGD-Points",
+    "category": "A+ Rewards"
+  },
+  {
+    "question": "How much can users receive from a Cashback Packet?",
+    "answer": "The amount is randomised by the system to each receiver.",
+    "url": "https://support.tngdigital.com.my/hc/en-my/articles/22138450756249-How-much-can-users-receive-from-a-Cashback-Packet",
+    "category": "Cashback Packet (User)"
   }
 ]
