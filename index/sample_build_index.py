@@ -1,5 +1,3 @@
-# loads FAQ → faq_to_chunks → Embedder → FaissSqliteBuilder → writes FAISS index + SQLite DB files
-
 import sys
 from pathlib import Path
 
