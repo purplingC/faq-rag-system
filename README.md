@@ -1,4 +1,4 @@
-<img width="1468" height="646" alt="image" src="https://github.com/user-attachments/assets/6f8a23bb-5031-462c-bb79-048870eb62b9" /># TNGD FAQ RAG SYSTEM — README
+# TNGD FAQ RAG SYSTEM — README
 
 > The system is designed to answer user questions accurately based only on verified knowledge base of TNG Digital (TNGD) FAQ content and is able to handle adversarial prompts.
 
