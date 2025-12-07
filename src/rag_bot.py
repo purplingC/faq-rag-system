@@ -19,7 +19,7 @@ TNGD_FAQ_URL = "https://support.tngdigital.com.my/hc/en-my/categories/3600022804
 embedder = Embedder(model_name=EMB_MODEL)
 retriever = Retriever(index_path=FAISS_INDEX_PATH, db_path=SQLITE_DB_PATH, dim=VECTOR_DIM)
 reranker = Reranker(model_name="cross-encoder/ms-marco-MiniLM-L-6-v2", device="cpu")
-_small_classifier = None  # lazy-load below
+_small_classifier = None  # lazy-load 
 _small_classifier_model_name = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 generator = TransformerGenerator(model_name=LLM_MODEL_NAME)
 
@@ -43,29 +43,29 @@ def small_llm_guardrail(query: str, threshold: float = 0.55) -> str:
         return "not_allowed"
     return "allowed"
 
-
+# Normalize duplicate keys
 def _normalize_key_for_dedupe(item: Dict[str, Any]) -> str:
     url = item.get("url") or ""
     if url:
         return url.split("?")[0].rstrip("/")
     return (item.get("chunk_text") or item.get("answer") or item.get("text") or "").strip()
 
-
+# Extract answer text from Q/A
 def _extract_answer(text: str) -> str:
     if not isinstance(text, str):
         return ""
     if "A:" in text:
         return text.split("A:", 1)[1].strip()
-    # handle lowercase 'a:' as a fallback
+    # Handle lowercase 'a:' as a fallback
     if "a:" in text and "Q:" not in text:
         return text.split("a:", 1)[1].strip()
     return text.strip()
 
-
+# Decide if source chunk already answers the question (embedding cosine)
 def source_answers_question_by_embed(question: str, chunk_text: str, embedder_obj, thresh: float = 0.66, q_emb=None) -> bool:
     if not chunk_text or not isinstance(chunk_text, str):
         return False
-    # extract the A: from the chunk_text if present
+    # Extract the A: from the chunk_text if present
     if "A:" in chunk_text:
         src_answer = chunk_text.split("A:", 1)[1].strip()
     elif "a:" in chunk_text and "Q:" not in chunk_text:
@@ -89,7 +89,7 @@ def source_answers_question_by_embed(question: str, chunk_text: str, embedder_ob
 
 
 def ask_tngd_bot(question: str) -> Dict[str, Any]:
-    # Accepts a question string and returns keys
+    # Accepts a question string and returns keys, sanitize and quick empty check
     q = (question or "").strip()
     if not q:
         return {"question": q, "retrieved_chunks": [], "final_answer": "Empty question.", "url": "", "blocked": False}
@@ -107,7 +107,7 @@ def ask_tngd_bot(question: str) -> Dict[str, Any]:
             "decision": "blocked_guardrail",
         }
     
-    # 1b) Second stage guardrail check
+    # 1b) Second stage guardrail check (LLM)
     if 0.25 <= guard.get("risk_score", 0.0) < 0.90:
         verdict = small_llm_guardrail(q, threshold=0.48)
         if verdict != "allowed":
@@ -124,7 +124,7 @@ def ask_tngd_bot(question: str) -> Dict[str, Any]:
     # 2) Exact-match check
     exact = retriever.exact_match(q)
     if exact:
-        # Moderation check
+        # Moderation check on exact chunk
         chunk_text = exact.get("chunk_text") or ""
         mod = moderation_score(chunk_text)
         if mod >= 0.5:
@@ -151,7 +151,7 @@ def ask_tngd_bot(question: str) -> Dict[str, Any]:
             "decision": "exact_db",
         }
 
-    # 3) Embedding
+    # 3) Embed the question
     try:
         q_emb = embedder.embed_texts([q])[0]
     except Exception as e:
@@ -164,7 +164,7 @@ def ask_tngd_bot(question: str) -> Dict[str, Any]:
             "decision": "embed_error",
         }
 
-    # 4) Retrieval 
+    # 4) Vector retrieval 
     try:
         retrieved_raw = retriever.query(q_emb, top_k=50)
     except Exception as e:
@@ -178,11 +178,11 @@ def ask_tngd_bot(question: str) -> Dict[str, Any]:
         }
     retrieved_raw = [r for r in retrieved_raw if isinstance(r, dict)]
 
-    # 5a) Rerank
+    # 5a) Rerank retrieved chunks
     try:
         reranked = reranker.rank(q, retrieved_raw, alpha=0.8)
     except Exception:
-        # fallback to based on retriever scores
+        # Fallback to based on retriever scores
         reranked = sorted(retrieved_raw, key=lambda x: x.get("score", 0.0), reverse=True)
 
     # 5b) Remove duplicates (by url or chunk_text)
@@ -196,7 +196,6 @@ def ask_tngd_bot(question: str) -> Dict[str, Any]:
         deduped.append(r)
 
     # 5c) Select top K to feed into generator (tuneable) 
-    # Smaller K reduces prompt size and hallucination risk, larger K gives more context.
     TOP_K_TO_GENERATOR = 3
     retrieved = deduped[:TOP_K_TO_GENERATOR]
 
@@ -205,7 +204,7 @@ def ask_tngd_bot(question: str) -> Dict[str, Any]:
             "question": q,
             "retrieved_chunks": retrieved,
             "final_answer": f"This topic is not in our curated TNG eWallet knowledge base or request blocked. Please check: {TNGD_FAQ_URL}",
-            "url": "",
+            "url": TNGD_FAQ_URL,
             "blocked": False,
             "decision": "not_found",
         }
@@ -230,13 +229,13 @@ def ask_tngd_bot(question: str) -> Dict[str, Any]:
             "question": q,
             "retrieved_chunks": retrieved,
             "final_answer": f"This topic is not in our curated TNG eWallet knowledge base or request blocked. Please check: {TNGD_FAQ_URL}",
-            "url": "",
+            "url": TNGD_FAQ_URL,
             "blocked": False,
             "decision": "not_found_fallback",
         }
 
 
-    # 6) Generater checks
+    # 6) Pre-generator checks
     # Define top item once
     top = retrieved[0]
     top_url = top.get("url") or ""
@@ -252,7 +251,7 @@ def ask_tngd_bot(question: str) -> Dict[str, Any]:
     SEMANTIC_MATCH_THRESHOLD = 0.80
     EXACT_MIN_SCORE = 0.10  
 
-    # Moderation check
+    # First moderation check 
     def _return_chunk_if_safe(chunk_text: str, decision: str):
         final = _extract_answer(chunk_text or "")
         return {
@@ -315,55 +314,22 @@ def ask_tngd_bot(question: str) -> Dict[str, Any]:
         pass
 
 
-    # 7) LLM generator call
-    # raw = generator.generate(
-    #     question=q,
-    #     retrieved=retrieved,
-    #     max_tokens=200,
-    #     temperature=0.0,
-    #     top_k_chunks=len(retrieved),
-    # )
-
-    # --- SINGLE generator call / bypass logic (canonical) ---
-    raw_gen_result = ""      # string result from source-or-llm
+    # 7) LLM generator call 
+    raw_gen_result = ""
     decision = None
-    prompt_full = None
-    prompt_length_meta = None
+    is_fallback = False
 
-    top_chunk = top  # alias for clarity
-    if top_chunk and isinstance(top_chunk.get("chunk_text"), str):
-        try:
-            if source_answers_question_by_embed(q, top_chunk["chunk_text"], embedder, thresh=0.66, q_emb=q_emb):
-                # bypass: use source answer directly
-                raw_gen_result = _extract_answer(top_chunk["chunk_text"])
-                decision = "bypass_source"
-                print("[HOTFIX] Using direct source answer (bypassed LLM).")
-            else:
-                # Call generator and request metadata
-                gen_resp = generator.generate(
-                    question=q,
-                    retrieved=retrieved,
-                    max_tokens=200,
-                    temperature=0.0,
-                    top_k_chunks=len(retrieved),
-                    return_metadata=True,
-                )
-                if isinstance(gen_resp, dict):
-                    raw_gen_result = gen_resp.get("answer", "") or ""
-                    prompt_full = gen_resp.get("prompt_full")
-                    prompt_length_meta = gen_resp.get("prompt_length")
-                else:
-                    raw_gen_result = str(gen_resp or "")
-                    prompt_full = None
-                    prompt_length_meta = getattr(generator, "last_prompt_length", None)
-                decision = "generator"
-        except Exception as e:
-            print("Generator/hotfix error:", e)
-            raw_gen_result = f"This topic is not in our curated TNG eWallet knowledge base or request blocked. Please check: {TNGD_FAQ_URL}"
-            decision = "generator_error"
-    else:
-        # No top chunk text -> call generator
-        try:
+    try:
+        #  7a) Direct source bypass if source already answers question
+        if top and isinstance(top.get("chunk_text"), str) and source_answers_question_by_embed(
+            q, top["chunk_text"], embedder, thresh=0.66, q_emb=q_emb
+        ):
+            raw_gen_result = _extract_answer(top["chunk_text"])
+            decision = "bypass_source"
+            print("[HOTFIX] Using direct source answer (bypassed LLM).")
+
+        else:
+            # 7b) Call generator and request metadata 
             gen_resp = generator.generate(
                 question=q,
                 retrieved=retrieved,
@@ -372,35 +338,37 @@ def ask_tngd_bot(question: str) -> Dict[str, Any]:
                 top_k_chunks=len(retrieved),
                 return_metadata=True,
             )
+
+            # 7c) Extract answer and optional flags from generator response
             if isinstance(gen_resp, dict):
                 raw_gen_result = gen_resp.get("answer", "") or ""
-                prompt_full = gen_resp.get("prompt_full")
-                prompt_length_meta = gen_resp.get("prompt_length")
+                is_fallback = bool(gen_resp.get("is_fallback", False))
+                # Allow generator to optionally provide its own decision tag
+                decision = gen_resp.get("decision", "generator")
             else:
                 raw_gen_result = str(gen_resp or "")
-                prompt_full = None
-                prompt_length_meta = getattr(generator, "last_prompt_length", None)
-            decision = "generator"
-        except Exception as e:
-            print("Generator error:", e)
-            raw_gen_result = f"This topic is not in our curated TNG eWallet knowledge base or request blocked. Please check: {TNGD_FAQ_URL}"
-            decision = "generator_error"
-    # --- end canonical generator/bypass block ---
+                is_fallback = False
+                decision = "generator"
 
-    # Normalize raw_text
+    except Exception as e:
+        print("Generator error:", e)
+        raw_gen_result = f"This topic is not in our curated TNG eWallet knowledge base or request blocked. Please check: {TNGD_FAQ_URL}"
+        decision = "generator_error"
+        is_fallback = True
+
+
+    # 8) Normalize raw LLM output
     raw_text = raw_gen_result or ""
     if not isinstance(raw_text, str):
         raw_text = str(raw_text)
 
-    # Strip "Sources:" footer
     if "Sources:" in raw_text:
         idx = raw_text.rfind("Sources:")
         answer_part = raw_text[:idx].strip()
     else:
         answer_part = raw_text.strip()
 
-    # --- NEW: If the generator output looks like the system prompt / instruction (i.e. the model echoed the prompt),
-    # treat it as an invalid answer and fall back to the canonical RULE A response.
+    # 9) Prompt-echo detection - force fallback to the system prompt RULE A response if model echoed instructions = LLM output looks like the system prompt 
     lower_ap = (answer_part or "").lower()
     prompt_echo_markers = [
         "you are the official tng ewallet faq assistant",
@@ -412,11 +380,10 @@ def ask_tngd_bot(question: str) -> Dict[str, Any]:
     if any(m in lower_ap for m in prompt_echo_markers):
         print("[DEBUG] generator returned prompt-like text -> treating as echo/fallback")
         answer_part = f"This topic is not in our curated TNG eWallet knowledge base or request blocked. Please check: {TNGD_FAQ_URL}"
-        # also set a clear decision so the rest of pipeline knows we forced a fallback
         decision = "generator_echo_fallback"
-        raw_text = answer_part  # normalize raw_text too
+        raw_text = answer_part  
 
-    # 9) Grounding check (n-gram / token overlap) to ensure answer is based on retrieved chunks
+    # 10) Grounding check (n-gram / token overlap) - ensure LLM answer is based on retrieved chunks
     all_texts = [r.get("chunk_text") or r.get("answer") or "" for r in retrieved]
     grounded = enforce_grounding(answer_part, all_texts)
     
@@ -446,19 +413,10 @@ def ask_tngd_bot(question: str) -> Dict[str, Any]:
             "decision": "grounding_fail",
         }
 
-    # 10) Final answer extraction
+    # 11) Final answer extraction
     final_generated = _extract_answer(answer_part.strip())
 
-    # If LLM was used, final_answer must equal the LLM output (answer_part)
-    if decision == "generator":
-        final_generated = answer_part    # EXACT: LLM output (stripped of Sources:)
-    elif decision == "bypass_source":
-        final_generated = answer_part    # source A: answer (already equal to raw_gen_result)
-    else:
-        # other decisions (e.g., exact_db or high_conf handled earlier) won't reach here normally
-        final_generated = answer_part
-
-    # 11) Moderation score (0.0 safe, 1.0 unsafe)
+    # 12) Final moderation check (0.0 safe, 1.0 unsafe)
     mod_score = moderation_score(final_generated)
     MODERATION_THRESHOLD = 0.5
     if mod_score >= MODERATION_THRESHOLD:
@@ -473,14 +431,13 @@ def ask_tngd_bot(question: str) -> Dict[str, Any]:
             "decision": "blocked_moderation"
         }
 
-    # Only override the returned URL when the pipeline returned the canonical fallback
+    # 13) Override returned URL when fallback detected
     fallback_start = f"This topic is not in our curated TNG eWallet knowledge base or request blocked. Please check: {TNGD_FAQ_URL}"
-    if decision == "generator" and (final_generated or "").strip().startswith(fallback_start):
+    if is_fallback or (fallback_start in (final_generated or "")):
         out_url = TNGD_FAQ_URL
     else:
         out_url = retrieved[0].get("url", "") if retrieved else ""
 
-    # Final return — preserve decision and chosen URL
     return {
         "question": q,
         "retrieved_chunks": retrieved,
