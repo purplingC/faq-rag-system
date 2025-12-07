@@ -4,7 +4,7 @@ import sqlite3
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 
-# FAISS IndexIDMap wrapper
+# 1) FAISS IndexIDMap wrapper
 IndexIDMapClass = getattr(faiss, "IndexIDMap2", None) or getattr(faiss, "IndexIDMap", None)
 if IndexIDMapClass is None:
     raise RuntimeError(
@@ -16,6 +16,7 @@ if IndexIDMapClass is None:
         "If unavailable, rebuild FAISS from source with IDMap enabled."
     )
 
+# 2) FaissSqliteBuilder - index + sqlite
 class FaissSqliteBuilder:
     def __init__(
         self,
@@ -23,21 +24,23 @@ class FaissSqliteBuilder:
         index_path: str = "data/index/sample_tng_faq.index",
         db_path: str = "data/index/sample_chunks.db",
     ):
+        # 2a) Store config
         self.dim = dim
         self.index_path = str(index_path)
         self.db_path = str(db_path)
 
-        # 1) Ensure db exists
+        # 2b) Ensure db exists
         self._ensure_db()
 
-        # 2) Load or create FAISS index
+        # 2c) Load or create FAISS index
         self._load_or_create_index()
 
-
     def _ensure_db(self):
+        # Create parent folders, open sqlite connection
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(self.db_path)
         cur = self.conn.cursor()
+        # Create chunks table if not exists
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS chunks (
@@ -80,7 +83,7 @@ class FaissSqliteBuilder:
         *,
         clear_existing: bool = False,
     ) -> None:
-        # Validate inputs
+        # 3a) Validate inputs
         vectors = np.asarray(vectors, dtype="float32")
         if vectors.ndim != 2:
             raise ValueError("vectors must be a 2D array of shape (n, dim)")
@@ -92,7 +95,7 @@ class FaissSqliteBuilder:
 
         cur = self.conn.cursor()
 
-        # Guarantee a clean rebuild or add 
+        # 3b)Guarantee a clean rebuild or add 
         if clear_existing:
             cur.execute("DELETE FROM chunks")
             self.conn.commit()
@@ -102,22 +105,22 @@ class FaissSqliteBuilder:
         else:
             start_id = self._next_id() 
 
-        # Normalize vectors (inner product ≈ cosine)
+        # 3c) Normalize vectors (inner product ≈ cosine)
         norms = np.linalg.norm(vectors, axis=1, keepdims=True)
         norms[norms == 0] = 1.0
         vecs = vectors / norms
 
-        # Compute ids for new vectors 
+        # 3d) Compute ids for new vectors 
         ids = np.arange(start_id, start_id + n, dtype="int64")
 
-        # Check that index must be wrapped with IndexIDMapClass
+        # 3e) Check that index must be wrapped with IndexIDMapClass
         if not isinstance(self.index, IndexIDMapClass):
             raise RuntimeError("Internal FAISS index is not wrapped with IndexIDMapClass — cannot add_with_ids()")
 
-        # Add vectors to FAISS with explicit IDs
+        # 3f) Add vectors to FAISS with explicit IDs
         self.index.add_with_ids(vecs, ids)
 
-        # Prepare metadata and insert in batch
+        # 3g)Prepare metadata and insert in batch
         rows = []
         for i, md in enumerate(metadatas):
             idx = int(ids[i])
@@ -146,6 +149,7 @@ class FaissSqliteBuilder:
                 )
             )
 
+        # 3h) Batch insert metadata and save index file
         cur.executemany(
             """
             REPLACE INTO chunks(
@@ -155,13 +159,11 @@ class FaissSqliteBuilder:
             """,
             rows,
         )
-
-        # Commit metadata and write index
         self.conn.commit()
         Path(self.index_path).parent.mkdir(parents=True, exist_ok=True)
         faiss.write_index(self.index, self.index_path)
 
-
+# 4) Retriever - load index and query
 class Retriever:
     def __init__(
         self,
@@ -174,17 +176,17 @@ class Retriever:
         self.dim = dim
         self._load()
 
+    # 4a) Load index and sqlite connection
     def _load(self):
         if not Path(self.index_path).exists():
             raise FileNotFoundError(f"FAISS index not found at {self.index_path}")
         self.index = faiss.read_index(self.index_path)
-        # ensure index is wrapped with ID map
         if not isinstance(self.index, IndexIDMapClass):
             base = self.index
             self.index = IndexIDMapClass(base)
         self.conn = sqlite3.connect(self.db_path)
 
-    # Input to query
+    # 4b) Query index with a single vector
     def query(
         self,
         qvec: np.ndarray,
@@ -192,19 +194,23 @@ class Retriever:
         min_score: float = 0.45,
         dedupe_by: Optional[str] = "url",
     ) -> List[Dict[str, Any]]:
+        # Validate and reshape query vector to 1D
         qvec = np.asarray(qvec, dtype="float32")
         if qvec.ndim == 2 and qvec.shape[0] == 1:
             qvec = qvec.reshape(-1)
         if qvec.ndim != 1:
             raise ValueError("qvec must be a 1D vector or shape (1, dim)")
 
-        # normalize query (since index uses normalized vectors)
+        # Normalize query (since index uses normalized vectors)
         norm = np.linalg.norm(qvec)
         qv = qvec if norm == 0 else qvec / norm
         qv = qv.reshape(1, -1).astype("float32")
+
+        # Guard - empty index returns empty list
         if getattr(self.index, "ntotal", 0) == 0:
             return []
-
+        
+        # Perform FAISS search - distances (D) and ids (I)
         D, I = self.index.search(qv, top_k)
         ids = [int(x) for x in I[0].tolist() if x is not None and int(x) >= 0]
         scores = D[0].tolist()
@@ -221,10 +227,10 @@ class Retriever:
         )
         rows = cur.fetchall()
         
-        row_map = {r[0]: r for r in rows} # Map rows by id for fast lookup
+        # Map rows by id for fast lookup
+        row_map = {r[0]: r for r in rows} 
 
         results_raw = []
-        # Preserve order of FAISS results
         for idx, score in zip(ids, scores):
             row = row_map.get(idx)
             if not row:
@@ -245,10 +251,10 @@ class Retriever:
                 }
             )
 
-        # Apply minimum score filter
+        # Filter out low-score hits using min_score
         filtered = [r for r in results_raw if r["score"] >= min_score]
 
-        # Deduplicate by given metadata key, keep top scoring chunk per key
+        # Deduplicate by metadata key, keep top scoring chunk per key
         if dedupe_by:
             best: Dict[str, Dict[str, Any]] = {}
             for r in filtered:
@@ -262,10 +268,14 @@ class Retriever:
 
         return cleaned
 
+    # 4c) Exact match lookup in sqlite (normalized)
     def exact_match(self, question: str):
+        # Guard empty input
         if not question:
             return None
-        norm = " ".join(question.strip().split()).lower() # collapse whitespace and lowercase
+        
+        # Normalize whitespace/lowercase and query DB
+        norm = " ".join(question.strip().split()).lower() 
         cur = self.conn.cursor()
         cur.execute(
             "SELECT id,question,url,category,chunk_text FROM chunks WHERE lower(trim(question))=?",
@@ -283,6 +293,7 @@ class Retriever:
             }
         return None
 
+    # 4d) Close sqlite db connection
     def close(self):
         try:
             self.conn.close()
