@@ -283,7 +283,7 @@ This RAG pipeline first ingests the FAQ data by loading, normalizing, chunking, 
 | **Static Top-K retrieval (always 3 chunks)** is inefficient for better context.   | **Dynamic prompt builder (token-budget-aware)** to adaptively choose chunks based on remaining prompt space.  |
 | **Limited VectorDB** (~30) limits retrieval diversity and system evaluation. | **Automated web scraper ingestion** to populate the VectorDB with full real-world data.  |
 | **Limited debugging visibility** into debugging or any function failures. | **Add a backend debugging/inspection API** with comprehensive request/response logging for easier analysis. |
-| **Adversarial prompts may bypass simple regex and keyword-based guardrails** through obfuscation, paraphrasing, or subtle prompt-injection attempts. | **Adopt multi-layer adversarial defense** with stronger obfuscation handling (leet + homoglyph detection), a semantic safety classifier, and enhanced logging to detect and adapt to evolving attack patterns. |
+| **Adversarial prompts may bypass simple regex and keyword-based guardrails** through obfuscation, paraphrasing, or subtle prompt-injection attempts. | **Adopt multi-layer adversarial defense** and enhanced logging to detect and adapt to evolving attack patterns. |
 
 ---
 
@@ -308,6 +308,7 @@ TNGD_FAQ_URL = "https://support.tngdigital.com.my/hc/en-my/categories/3600022804
 
 
 ---
+
 
 
 
