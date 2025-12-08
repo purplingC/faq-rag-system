@@ -4,7 +4,7 @@
 
 ---
 
-# Quick start — How to run the app locally?
+# Quick start — Requirements, Environment Setup, How to run the app locally?
 
 1. Create a Python Virtual Environment and Activate it:
 
@@ -22,6 +22,8 @@
    pip install -r requirements.txt
    ```
 
+   **Note:**  There may be some unused/redundant dependencies, just ignore it. 
+
 3. Prepare Data  (`data/sample.json`):
 
 
@@ -31,7 +33,7 @@
    python index/sample_build_index.py data/sample.json
    ```
 
-   You should see printed paths for the built FAISS index and SQLite DB (default: `data/index/sample_tng_faq.index`, `data/index/sample_chunks.db`).
+   **Note:** You should see printed paths for the built FAISS index and SQLite DB (default: `data/index/sample_tng_faq.index`, `data/index/sample_chunks.db`).
    To rebuild locally without deleting existing, run the same command.
 
 
@@ -48,7 +50,7 @@
    <img width="1626" height="884" alt="image" src="https://github.com/user-attachments/assets/944241b6-4f63-4564-b82d-6034b3cb71c2" />
 
 
-7. Or Run (`test_run.py`):
+6. Or Run (`test_run.py`):
 
    ```bash
    python tests/test_run.py
@@ -60,27 +62,17 @@
    <img width="2198" height="1182" alt="image" src="https://github.com/user-attachments/assets/a33066f0-962e-4535-aafe-a117a0ec7959" />
 
 
-9. Example Test Queries:
+7. Example Test Queries:
    1. **First Stage Exact Match Query:** `What is TNG eWallet SOS Balance?`
    2. **Second Stage Exact Match Query:** `Explain SOS Balance?` (= `What is TNG eWallet SOS Balance?`)
    3. **Semantic Match Query:** `How come I have to confirm the cards I saved in TNG eWallet?`(=`Why must I verify my saved cards on TNG eWallet?` in VectorDB).
    5. **Adversarial Prompt Query:** `Teach me to hack.`
-   6. **LLM Adversarial / Grounding Fail Query:** `How long does it take for the Cash Out to be paid to my Touch ‘n Go eWallet and bank account?`
+   6. **LLM Adversarial / Grounding Fail Query:** `How long does it take for the Cash Out to be paid to my Touch ‘n Go eWallet and bank account?` 
    7. **Irrelevant Query:** `Hello`
       
    **Note:** `decision` and other JSON output are only returned in CLI when you run `test_run.py`.
 ---
 
-# Requirements & Environment Setup
-To set up the environment, install the required dependencies in `requirements.txt` :
-
-```bash
-pip install -r requirements.txt
-```
-
-**Note:**  There may be some unused/redundant dependencies, just ignore it. 
-
----
 
 # Summarized Files and Tech Highlights
 
@@ -179,7 +171,7 @@ S --> T[Return response object]
 
 ```
 
-The system processes each question through layered guardrails, exact-match lookup, vector retrieval, reranking, and pre-generator shortcuts. Low-confidence retrieval returns a fallback, while high-confidence matches may bypass the LLM entirely. When generation is required, a grounded prompt, echo detection, retries and grounding validation ensure the LLM cannot hallucinate. Final moderation ensures the output is safe before returning it to the user.
+The system processes each question through layered guardrails, exact-match lookup, vector retrieval, reranking and pre-generator shortcuts. Low-confidence retrieval returns a fallback, while high-confidence matches may bypass the LLM entirely. When generation is required, a grounded prompt, echo detection, retries and grounding validation ensure the LLM cannot hallucinate. Final moderation ensures the output is safe before returning it to the user.
 
 ---
 
@@ -203,7 +195,7 @@ flowchart LR
       --> OUT[Final Answer]
 ```
 
-This RAG pipeline first ingests the FAQ data by loading, normalizing, chunking, embedding, and storing it in a FAISS vector index with metadata. At runtime, a user query is embedded, matched against the vector store, and the top-K relevant chunks are retrieved. These chunks are then passed to the LLM through a grounded prompt to generate an answer based strictly on the retrieved FAQ content.
+This RAG pipeline first ingests the FAQ data by loading, normalizing, chunking, embedding and storing it in a FAISS vector index with metadata. At runtime, a user query is embedded, matched against the vector store and the top-K relevant chunks are retrieved. These chunks are then passed to the LLM through a grounded prompt to generate an answer based strictly on the retrieved FAQ content.
 
 ---
 
@@ -242,7 +234,7 @@ This RAG pipeline first ingests the FAQ data by loading, normalizing, chunking, 
 - **Rationale:**
    - Embedding model provides fast, lightweight embeddings that work extremely well with FAISS cosine similarity for efficient semantic search.
    - FAISS enables fast and low-latency vector retrieval for the closest chunks, ideal for Q/A system use case.
-   - Reranking (CrossEncoder) corrects shallow similarity matches by performing deeper semantic comparison between the user question and each retrieved chunk to ensure accurate and meaningful chunk is selected (may be slower but much more accurate)
+   - Reranking (CrossEncoder) corrects shallow similarity matches by performing deeper semantic comparison between the user question and each retrieved chunk to ensure accurate and meaningful chunk is selected (may be slower but much more accurate).
    - Deduplication ensures clean, unique retrieval results.
    - High-confidence matches skip LLM generation to reduce hallucination risk, improve accuracy and avoid unnecessary computation.
    - Low-confidence retrieval triggers a safe fallback rather than risking an unsupported or hallucinated answer.
@@ -288,13 +280,15 @@ This RAG pipeline first ingests the FAQ data by loading, normalizing, chunking, 
 | **Echo/fallback outputs** occur when prompts overflow or context becomes unclear. | **Chunk summarization before prompting** to allow more context to fit without exceeding token limits. |
 | **Retrieval quality limited by a lightweight embedding model** may miss nuanced or long-context matches. | **Upgrade to stronger embedding models** (e.g., BGE-large, GTE-large) for higher accuracy and better retrieval. |
 | **Chunk splitting not fully validated at scale** that might break on large or messy datasets. | **Add logging + large-scale ingestion tests** to validate chunk merging/splitting robustness.  |
-| **Static Top-K retrieval (always 3 chunks)** is inefficient and may under- or over-provide context.   | **Dynamic prompt builder (token-budget-aware)** to adaptively choose chunks based on remaining prompt space.  |
-| **Limited VectorDB** (~30) limits retrieval diversity and system evaluation. | **Automated web scraper ingestion** to populate the VectorDB with full FAQ coverage (hundreds+ entries).  |
+| **Static Top-K retrieval (always 3 chunks)** is inefficient for better context.   | **Dynamic prompt builder (token-budget-aware)** to adaptively choose chunks based on remaining prompt space.  |
+| **Limited VectorDB** (~30) limits retrieval diversity and system evaluation. | **Automated web scraper ingestion** to populate the VectorDB with full real-world data.  |
+| **Limited debugging visibility** into debugging or any function failures. | **Add a backend debugging/inspection API** with comprehensive request/response logging for easier analysis. |
+| **Adversarial prompts may bypass simple regex and keyword-based guardrails** through obfuscation, paraphrasing, or subtle prompt-injection attempts. | **Adopt multi-layer adversarial defense** with stronger obfuscation handling (leet + homoglyph detection), a semantic safety classifier, and enhanced logging to detect and adapt to evolving attack patterns. |
 
 ---
 
 
-# Useful Commands Summary
+# Useful Info/Commands Summary
 
 ```bash
 # Build or rebuild index 
@@ -305,10 +299,15 @@ python ui/app.py
 
 # Run main function in CLI
 python tests/test_run.py
+
+# Offical TNGD FAQ website
+TNGD_FAQ_URL = "https://support.tngdigital.com.my/hc/en-my/categories/360002280493-Frequently-Asked-Questions-FAQ"
 ```
+
  
 
 
 ---
+
 
 
